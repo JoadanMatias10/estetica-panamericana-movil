@@ -1,56 +1,60 @@
-# Welcome to your Expo app 👋
+# Estética Panamericana · aplicación móvil
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil en Expo, React Native y TypeScript para los módulos Público (invitado), Cliente y Estilista. El proyecto usa Expo Router, arquitectura cliente-servidor y una adaptación de MVVM para React.
 
-## Get started
+## Alcance actual
 
-1. Install dependencies
+- **APP-001:** proyecto Expo SDK 57 configurado, identidad de la aplicación, TypeScript estricto y ESLint.
+- **APP-002:** tokens visuales, componentes base y navegación inferior de los tres módulos.
+- Las pantallas funcionales, autenticación, sesión, API, almacenamiento, citas y pagos pertenecen a actividades posteriores y todavía no se simulan como terminadas.
 
-   ```bash
-   npm install
-   ```
+## Ejecutar localmente
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Requisitos: Node.js 22.13 o posterior y npm.
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Desde el menú **Más** del módulo público existen accesos temporales a Cliente y Estilista para comprobar su navegación local. APP-006 reemplazará esos accesos por la redirección real según la sesión y el rol.
 
-### Other setup steps
+## Navegación base
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+| Módulo | Ruta inicial | Pestañas |
+| --- | --- | --- |
+| Público | `/public` | Inicio, Servicios, Productos, Más |
+| Cliente | `/client` | Inicio, Citas, Servicios, Productos, Perfil |
+| Estilista | `/stylist` | Inicio, Citas, Agenda, Servicios, Horario |
 
-## Learn more
+La ruta `/` redirige al módulo público. No se incluyen módulos de Administrador ni Alexa.
 
-To learn more about developing your project with Expo, look at the following resources:
+## MVVM
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```text
+src/
+├── app/                         # Views de ruta y layouts de Expo Router
+├── features/
+│   ├── navigation/
+│   │   ├── models/              # Contratos y definición de módulos
+│   │   ├── view-models/         # Estado/acciones de navegación
+│   │   └── views/               # Vistas reutilizables
+│   └── public/views/            # Vistas propias del módulo público
+└── shared/
+    ├── components/              # Botón, tarjeta, tipografía, iconos y pantalla
+    ├── navigation/              # Navegador inferior común
+    ├── theme/                   # Tokens del sistema visual
+    └── types/                   # Tipos compartidos
+```
 
-## Join the community
+Las rutas se mantienen delgadas: renderizan una View. Las Views consumen ViewModels; los ViewModels coordinan estado y acciones; los Models describen los datos. La capa de servicios para la API REST existente se añadirá en APP-011, sin colocar solicitudes HTTP dentro de las pantallas.
 
-Join our community of developers creating universal apps.
+## Validación
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npm run lint
+npx tsc --noEmit
+npx expo-doctor
+```
+
+El proyecto usa Continuous Native Generation; no se deben crear ni editar manualmente las carpetas `ios/` o `android/`.
