@@ -208,4 +208,13 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#56515F',
   },
+  disabled: {
+    opacity: 0.45,
+  },
+  error: {
+    color: '#E53E3E',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 10,
+  },
 });
