@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import {
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -13,6 +14,7 @@ import { gradients } from '@/shared/theme/tokens';
 
 import { styles } from '../styles/contact-screen.styles';
 import type { ContactSchedule } from '../models/public-contact';
+import { CatalogStatus } from '../components/catalog-status';
 
 type Props = {
   onBack: () => void;
@@ -20,6 +22,7 @@ type Props = {
   onCall: () => void;
   onWhatsApp: () => void;
   onEmail: () => void;
+  businessName: string;
   address?: string;
   locationReference?: string;
   mapImage?: ImageSourcePropType;
@@ -29,7 +32,12 @@ type Props = {
   canCall: boolean;
   canWhatsApp: boolean;
   canEmail: boolean;
+  isLoading: boolean;
+  isRefreshing: boolean;
+  onRefresh: () => void;
+  onRetry: () => void;
   error?: string;
+  actionError?: string;
 };
 
 export function ContactScreen({
@@ -38,7 +46,8 @@ export function ContactScreen({
   onCall,
   onWhatsApp,
   onEmail,
-  address = 'Dirección pendiente de agregar.',
+  businessName,
+  address,
   locationReference,
   mapImage,
   schedule = [],
@@ -47,7 +56,12 @@ export function ContactScreen({
   canCall,
   canWhatsApp,
   canEmail,
+  isLoading,
+  isRefreshing,
+  onRefresh,
+  onRetry,
   error,
+  actionError,
 }: Props) {
   const contactOptions = [
     {
@@ -87,6 +101,7 @@ export function ContactScreen({
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#9861E8" />}
         >
           <View style={styles.header}>
             <Pressable
@@ -114,6 +129,22 @@ export function ContactScreen({
             Visítanos o comunícate con nosotros
           </Text>
 
+          {isLoading ? (
+            <CatalogStatus kind="loading" title="Cargando datos de contacto…" />
+          ) : error && !address ? (
+            <CatalogStatus
+              kind="error"
+              title="No se pudieron cargar los datos de contacto"
+              message={error}
+              actionLabel="Reintentar"
+              onAction={onRetry}
+            />
+          ) : (
+            <>
+          {error ? (
+            <CatalogStatus compact kind="error" title="No se pudo actualizar el contacto" message={error} actionLabel="Reintentar" onAction={onRetry} />
+          ) : null}
+
           <View style={styles.businessCard}>
             <View style={styles.businessIcon}>
               <Ionicons
@@ -125,16 +156,14 @@ export function ContactScreen({
 
             <View style={styles.businessInfo}>
               <Text style={styles.businessName}>
-                Estética Panamericana
+                {businessName}
               </Text>
 
               <Text selectable style={styles.address}>
-                {address}
+                {address || 'Dirección no disponible.'}
               </Text>
 
-              <Text style={styles.reference}>
-                {locationReference || 'Referencia de ubicación pendiente.'}
-              </Text>
+              {locationReference ? <Text style={styles.reference}>{locationReference}</Text> : null}
             </View>
           </View>
 
@@ -161,7 +190,7 @@ export function ContactScreen({
                 </Text>
 
                 <Text style={styles.mapPlaceholderText}>
-                  Mapa de referencia pendiente de confirmar.
+                  Usa el botón para abrir la ubicación en tu aplicación de mapas.
                 </Text>
               </View>
             )}
@@ -228,8 +257,8 @@ export function ContactScreen({
             ))}
           </View>
 
-          {!canDirections && <Text style={styles.pendingNotice}>Datos para llegar pendientes de confirmar.</Text>}
-          {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+          {!canDirections && <Text style={styles.pendingNotice}>La ubicación no está disponible en este momento.</Text>}
+          {actionError && <Text accessibilityRole="alert" style={styles.error}>{actionError}</Text>}
 
           <Text style={styles.sectionTitle}>
             Horario de atención
@@ -286,6 +315,8 @@ export function ContactScreen({
               </Text>
             )}
           </View>
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
