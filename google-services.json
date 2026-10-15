@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "77956905746",
+    "project_id": "estetica-panmericana-movil",
+    "storage_bucket": "estetica-panmericana-movil.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77956905746:android:e2fe23effdc84d7c6b91cb",
+        "android_client_info": {
+          "package_name": "com.esteticapanamericana.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "77956905746-b61v5r53s2lqae3mdesv1lg1urs4h3pj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.esteticapanamericana.app",
+            "certificate_hash": "de3bb62c877f9d5572487d8c59f833635ee456c9"
+          }
+        },
+        {
+          "client_id": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBGOGjgoZ2ZjnXE3kniMFNU3hW9fYtPDfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

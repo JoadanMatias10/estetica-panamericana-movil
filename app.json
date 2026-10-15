@@ -11,6 +11,8 @@
       "icon": "./assets/images/brand-icon.png"
     },
     "android": {
+      "package": "com.esteticapanamericana.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFF9FC",
         "foregroundImage": "./assets/images/brand-icon-foreground.png"
@@ -23,6 +25,10 @@
     },
     "plugins": [
       "expo-router",
+      "expo-secure-store",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-google-signin/google-signin",
       [
         "expo-splash-screen",
         {
@@ -35,6 +41,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "googleWebClientId": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com"
     }
   }
 }
