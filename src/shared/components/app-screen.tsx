@@ -1,17 +1,25 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { PropsWithChildren } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { gradients, layout, spacing } from '@/shared/theme/tokens';
 
 type AppScreenProps = PropsWithChildren<{
   contentContainerStyle?: StyleProp<ViewStyle>;
+  onRefresh?: () => void;
+  refreshing?: boolean;
   scroll?: boolean;
 }>;
 
-export function AppScreen({ children, contentContainerStyle, scroll = true }: AppScreenProps) {
+export function AppScreen({
+  children,
+  contentContainerStyle,
+  onRefresh,
+  refreshing = false,
+  scroll = true,
+}: AppScreenProps) {
   return (
     <LinearGradient colors={gradients.screen} style={styles.background}>
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
@@ -20,6 +28,7 @@ export function AppScreen({ children, contentContainerStyle, scroll = true }: Ap
             contentContainerStyle={styles.scrollContent}
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
+            refreshControl={onRefresh ? <RefreshControl onRefresh={onRefresh} refreshing={refreshing} /> : undefined}
             showsVerticalScrollIndicator={false}>
             <View style={[styles.content, contentContainerStyle]}>{children}</View>
           </ScrollView>

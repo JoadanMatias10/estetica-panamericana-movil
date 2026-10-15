@@ -1,5 +1,5 @@
-import { ModuleOverviewView } from '@/features/navigation/views/module-overview-view';
+import { ClientHomeScreen } from '@/features/client/views/client-home-screen';
 
-export default function ClientHomeScreen() {
-  return <ModuleOverviewView moduleId="client" />;
+export default function ClientHomeRoute() {
+  return <ClientHomeScreen />;
 }
