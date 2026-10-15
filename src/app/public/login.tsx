@@ -1,5 +1,5 @@
-import { LoginBaseView } from '@/features/public/views/login-base-view';
+import { LoginScreen } from '@/features/public/auth/views/login-screen';
 
-export default function LoginScreen() {
-  return <LoginBaseView />;
+export default function LoginRoute() {
+  return <LoginScreen />;
 }
