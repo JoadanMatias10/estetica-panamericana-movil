@@ -561,7 +561,9 @@ export function buildClientPaymentFormData(
   if (body.appointmentId) formData.append('appointmentId', body.appointmentId);
   if (body.referencia) formData.append('referencia', body.referencia);
   if (body.notas) formData.append('notas', body.notas);
-  if (proof) {
+  if (proof?.file) {
+    formData.append('comprobante', proof.file, proof.name);
+  } else if (proof) {
     formData.append('comprobante', {
       name: proof.name,
       type: proof.mimeType,
