@@ -13,7 +13,6 @@ type Props = {
   categories: readonly ProductCategory[];
   query: string;
   categoryId: string;
-  isPreview: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
   error?: string;
@@ -58,7 +57,6 @@ export function ProductsScreen(props: Props) {
         <Text style={styles.linkText}>Ingresar</Text><Ionicons name="chevron-forward" size={13} color={palette.secondary} />
       </Pressable>
     </LinearGradient>
-    {props.isPreview && <Text style={styles.preview}>Catálogo de ejemplo · imágenes ilustrativas; precios y existencias por confirmar.</Text>}
     {!!props.error && props.products.length > 0 && <CatalogStatus kind="error" compact
       title="No se pudo actualizar el catálogo" message={props.error} actionLabel="Reintentar" onAction={props.onRetry} />}
   </>;
