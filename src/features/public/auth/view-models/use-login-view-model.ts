@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 
 import { adoptClientSession } from '@/features/client/services/client-session-service';
+import { savePublicAuthSession } from '@/features/public/auth/services/public-auth-session';
 import type { FormErrors, LoginForm } from '@/features/public/auth/models/public-auth-models';
 import {
   hasFormErrors,
@@ -53,6 +54,11 @@ export function useLoginViewModel() {
         correo: normalizeEmail(form.correo),
         password: form.password,
       });
+      if (response.user.role === 'stylist') {
+        await savePublicAuthSession({ token: response.token, user: response.user });
+        router.replace('/stylist');
+        return;
+      }
       await adoptClientSession({ token: response.token, user: response.user });
       router.replace(response.user.profileComplete === false ? '/client/complete-profile' : '/client');
     } catch (error) {

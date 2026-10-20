@@ -8,7 +8,8 @@ import type {
 } from '@/features/public/auth/models/public-auth-models';
 import { PUBLIC_API_BASE_URL } from '@/features/public/services/public-api-service';
 
-const REQUEST_TIMEOUT_MS = 20_000;
+// El servicio puede tardar al reactivarse después de un periodo sin uso.
+const REQUEST_TIMEOUT_MS = 60_000;
 
 type ApiErrorPayload = {
   code?: unknown;
