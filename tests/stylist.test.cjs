@@ -185,3 +185,46 @@ test('availability PUT preserves data, and validation prevents invalid requests'
   await assert.rejects(api.saveAvailability([], blocks, interval));
   assert.equal(count, 1);
 });
+
+test('validates day hours, breaks and block dates before saving', () => {
+  const { workDays } = mapper.mapStylistAvailability({ availability: schedule });
+  const day = workDays.find((item) => item.active);
+  assert.equal(availability.dayValidation(day), undefined);
+  assert.match(availability.dayValidation({ ...day, start: 'bad' }), /HH:mm/);
+  assert.match(availability.dayValidation({ ...day, end: day.start }), /posterior/);
+  assert.match(availability.dayValidation({ ...day, breakEnd: '' }), /dos horas/);
+  assert.match(availability.dayValidation({ ...day, breakStart: day.start, breakEnd: day.end }), /toda la jornada/);
+  assert.match(availability.blockValidation({ date: '2026-02-30', start: '10:00', end: '11:00' }), /fecha válida/);
+  assert.match(availability.blockValidation({ date: '2026-10-20', start: 'bad', end: '11:00' }), /HH:mm/);
+  assert.match(availability.blockValidation({ date: '2026-10-20', start: '11:00', end: '10:00' }), /después/);
+});
+
+test('detects appointments outside hours, during breaks and in blocked periods', () => {
+  const { workDays } = mapper.mapStylistAvailability({ availability: schedule });
+  const base = { ...mapper.mapStylistAppointment(appointment, 45), date: '2026-10-16', start: '10:00', duration: 30 };
+  assert.equal(availability.availabilityConflict(base, workDays, []), false);
+  assert.equal(availability.availabilityConflict({ ...base, start: '08:30' }, workDays, []), true);
+  assert.equal(availability.availabilityConflict({ ...base, start: '13:15' }, workDays, []), true);
+  assert.equal(availability.availabilityConflict(base, workDays.filter((day) => day.weekday !== 5), []), true);
+  assert.equal(availability.availabilityConflict(base, workDays, [{ id: 'b', date: base.date, start: '09:45', end: '10:15', reason: 'Ausencia' }]), true);
+});
+
+test('agenda distinguishes working time, rest periods and non-working dates', () => {
+  const { workDays } = mapper.mapStylistAvailability({ availability: schedule });
+  const working = availability.dayAgenda('2026-10-16', workDays, [], []);
+  assert.ok(working.rows.some((row) => row.kind === 'break'));
+  assert.ok(working.rows.some((row) => row.kind === 'free'));
+  const nonWorking = availability.dayAgenda('2026-10-18', workDays, [], []);
+  assert.equal(nonWorking.freeCount, 0);
+  const blocked = availability.dayAgenda('2026-10-16', workDays, [{ id: 'b', date: '2026-10-16', start: '09:00', end: '18:00', reason: 'Ausencia' }], []);
+  assert.equal(blocked.freeCount, 0);
+});
+
+test('checks availability interval and invalid calendar data', () => {
+  const { workDays } = mapper.mapStylistAvailability({ availability: schedule });
+  assert.ok(model.validateAvailability(workDays, [], 10).some((error) => error.includes('intervalo')));
+  assert.ok(model.validateAvailability(workDays, [{ id: '', date: 'invalid', start: '20:00', end: '10:00', reason: '' }], 45).length >= 2);
+  assert.equal(model.timeLabel(Number.NaN), '--:--');
+  assert.equal(model.timeLabel(75), '01:15');
+  assert.equal(model.initials('Ana López'), 'AL');
+});
