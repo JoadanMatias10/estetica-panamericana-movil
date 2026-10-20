@@ -46,7 +46,13 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run test:node
+      - run: npm run test:node:coverage
+      - name: Publicar cobertura Node
+        uses: actions/upload-artifact@v7
+        with:
+          name: node-lcov
+          path: coverage/node/lcov.info
+          if-no-files-found: error
 
   eslint:
     name: eslint
@@ -82,7 +88,7 @@ jobs:
 
   sonarqube:
     name: sonarqube
-    needs: unit-tests
+    needs: [unit-tests, node-tests]
     # SonarQube Cloud Free analiza PR cuyo destino sea main.
     if: ${{ always() && github.event_name == 'pull_request' && github.base_ref == 'main' }}
     runs-on: ubuntu-latest
@@ -99,10 +105,11 @@ jobs:
           SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
           SONAR_ORGANIZATION_KEY: ${{ vars.SONAR_ORGANIZATION_KEY }}
           UNIT_TESTS_RESULT: ${{ needs['unit-tests'].result }}
+          NODE_TESTS_RESULT: ${{ needs['node-tests'].result }}
         run: |
-          if [[ "$UNIT_TESTS_RESULT" != 'success' ]]; then
+          if [[ "$UNIT_TESTS_RESULT" != 'success' || "$NODE_TESTS_RESULT" != 'success' ]]; then
             echo '## SonarQube: PENDIENTE (sin cobertura válida)' >> "$GITHUB_STEP_SUMMARY"
-            echo '::error::SonarQube pendiente: unit-tests no generó cobertura válida.'
+            echo '::error::SonarQube pendiente: unit-tests o node-tests no generaron cobertura válida.'
             exit 1
           fi
           if [[ -z "$SONAR_TOKEN" || -z "$SONAR_PROJECT_KEY" || -z "$SONAR_ORGANIZATION_KEY" ]]; then
@@ -123,6 +130,12 @@ jobs:
         with:
           name: jest-lcov
           path: coverage
+      - uses: actions/download-artifact@v8
+        with:
+          name: node-lcov
+          path: coverage/node
+      - name: Combinar cobertura Jest y Node
+        run: node tests/merge-lcov.cjs
       - name: Verificar reporte LCOV
         run: test -s coverage/lcov.info
       - name: Analizar y esperar Quality Gate
