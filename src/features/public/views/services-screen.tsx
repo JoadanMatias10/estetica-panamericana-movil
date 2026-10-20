@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { gradients, palette } from '@/shared/theme/tokens';
 import { CatalogStatus } from '../components/catalog-status';
 import { ServiceCard } from '../components/service-card';
-import { ServiceDetail, ServicesFilters } from '../components/services-overlays';
+import { ServicesFilters } from '../components/services-overlays';
 import type { PublicService, ServiceCategory, ServiceFilters } from '../models/public-service';
 import { styles } from '../styles/services-screen.styles';
 
@@ -14,7 +14,6 @@ type Props = {
   categories: readonly ServiceCategory[];
   query: string;
   categoryId: string;
-  isPreview: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
   error?: string;
@@ -24,7 +23,6 @@ type Props = {
   activeFilterCount: number;
   filtersVisible: boolean;
   draftFilters: ServiceFilters;
-  selectedService: PublicService | null;
   onQueryChange: (value: string) => void;
   onCategoryChange: (id: string) => void;
   onOpenFilters: () => void;
@@ -34,7 +32,6 @@ type Props = {
   onApplyFilters: () => void;
   onResetSearch: () => void;
   onDetail: (service: PublicService) => void;
-  onCloseDetail: () => void;
   onLogin: () => void;
 };
 
@@ -84,7 +81,6 @@ export function ServicesScreen(props: Props) {
         <Text style={styles.linkText}>Ingresar</Text><Ionicons name="chevron-forward" size={13} color={palette.secondary} />
       </Pressable>
     </LinearGradient>
-    {props.isPreview && <Text style={styles.preview}>Catálogo de ejemplo · precios y tiempos por confirmar.</Text>}
     {!!props.error && props.services.length > 0 && <CatalogStatus kind="error" compact
       title="No se pudo actualizar el catálogo" message={props.error} actionLabel="Reintentar" onAction={props.onRetry} />}
   </>;
@@ -107,8 +103,6 @@ export function ServicesScreen(props: Props) {
             onAction={props.hasActiveSearch ? props.onResetSearch : undefined} />} />
       <ServicesFilters visible={props.filtersVisible} filters={props.draftFilters}
         onClose={props.onCloseFilters} onToggle={props.onToggleFilter} onClear={props.onClearDraftFilters} onApply={props.onApplyFilters} />
-      <ServiceDetail service={props.selectedService} category={categoryLabel(props.selectedService?.categoryId ?? '')}
-        isPreview={props.isPreview} onClose={props.onCloseDetail} onLogin={props.onLogin} />
     </SafeAreaView>
   </LinearGradient>;
 }
