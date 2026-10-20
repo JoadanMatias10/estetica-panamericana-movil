@@ -40,7 +40,6 @@ export const styles = StyleSheet.create({
   quantityButton: { width: 48, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   quantityText: { minWidth: 30, textAlign: 'center', color: palette.textMuted, fontSize: 16, fontWeight: '600' },
   restriction: { color: palette.textMuted, fontSize: 11, textAlign: 'center', lineHeight: 17 },
-  preview: { color: palette.textMuted, fontSize: 11, lineHeight: 17 },
   error: { color: palette.error, fontSize: 13, lineHeight: 20 },
   footer: { backgroundColor: palette.surface, borderTopWidth: 1, borderColor: '#ECE8F0' },
   footerBody: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md, padding: spacing.lg, maxWidth: layout.contentMaxWidth, width: '100%', alignSelf: 'center' },

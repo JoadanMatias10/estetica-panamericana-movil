@@ -1,5 +1,1 @@
-import { ModuleSectionView } from '@/features/navigation/views/module-section-view';
-
-export default function StylistServicesScreen() {
-  return <ModuleSectionView moduleId="stylist" sectionKey="services" />;
-}
+export { StylistServicesScreen as default } from '@/features/stylist/views/stylist-services-screen';
