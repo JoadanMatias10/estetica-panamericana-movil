@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getProductsCatalog } from '@/features/public/data/catalog-api';
+import { getProductsCatalog } from '@/features/public/services/public-api-service';
 import { ProductDetailScreen } from '@/features/public/views/product-detail-screen';
 import { useProductDetailViewModel } from '@/features/public/view-models/use-product-detail-view-model';
 
