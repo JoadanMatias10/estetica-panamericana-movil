@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - testing
+  pull_request:
+    branches:
+      - testing
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    name: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:ci
+      - name: Publicar cobertura LCOV
+        uses: actions/upload-artifact@v7
+        with:
+          name: jest-lcov
+          path: coverage/lcov.info
+          if-no-files-found: error
+
+  eslint:
+    name: eslint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Generar tipos de Expo para CI
+        run: |
+          npx expo customize tsconfig.json
+          test -s expo-env.d.ts
+      - run: npm run typecheck
+
+  sonarqube:
+    name: sonarqube
+    needs: unit-tests
+    # SonarQube Cloud Free analiza PR cuyo destino sea main.
+    if: ${{ always() && github.event_name == 'pull_request' && github.base_ref == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Marcar PR de fork como pendiente de análisis
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          echo '## SonarQube: PENDIENTE (PR externo sin acceso a secretos)' >> "$GITHUB_STEP_SUMMARY"
+          echo '::error::SonarQube pendiente: no se analizan PR externos con secretos.'
+          exit 1
+      - name: Comprobar cobertura y configuración de SonarQube
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_ORGANIZATION_KEY: ${{ vars.SONAR_ORGANIZATION_KEY }}
+          UNIT_TESTS_RESULT: ${{ needs['unit-tests'].result }}
+        run: |
+          if [[ "$UNIT_TESTS_RESULT" != 'success' ]]; then
+            echo '## SonarQube: PENDIENTE (sin cobertura válida)' >> "$GITHUB_STEP_SUMMARY"
+            echo '::error::SonarQube pendiente: unit-tests no generó cobertura válida.'
+            exit 1
+          fi
+          if [[ -z "$SONAR_TOKEN" || -z "$SONAR_PROJECT_KEY" || -z "$SONAR_ORGANIZATION_KEY" ]]; then
+            echo '## SonarQube: PENDIENTE DE CONFIGURACIÓN' >> "$GITHUB_STEP_SUMMARY"
+            echo '::error::Configure SONAR_TOKEN, SONAR_PROJECT_KEY y SONAR_ORGANIZATION_KEY en GitHub Actions.'
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: jest-lcov
+          path: coverage
+      - name: Verificar reporte LCOV
+        run: test -s coverage/lcov.info
+      - name: Analizar y esperar Quality Gate
+        id: sonar_scan
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION_KEY }}
+      - name: Registrar resultado del análisis
+        if: ${{ always() && steps.sonar_scan.outcome != 'skipped' }}
+        env:
+          SCAN_OUTCOME: ${{ steps.sonar_scan.outcome }}
+        run: |
+          if [[ "$SCAN_OUTCOME" == 'success' ]]; then
+            echo '## SonarQube: APROBADO (análisis y Quality Gate)' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## SonarQube: FALLIDO (análisis o Quality Gate)' >> "$GITHUB_STEP_SUMMARY"
+          fi
