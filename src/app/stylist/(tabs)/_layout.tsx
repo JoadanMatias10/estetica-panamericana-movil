@@ -9,5 +9,5 @@ const tabs = [
 ] as const;
 
 export default function StylistTabsLayout() {
-  return <ModuleTabs tabs={tabs} />;
+  return <ModuleTabs tabs={tabs} hiddenRoutes={['notifications']} />;
 }

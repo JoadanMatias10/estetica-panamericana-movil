@@ -59,6 +59,7 @@ export type CreateClientPaymentInput = {
 };
 
 export type ClientPaymentProof = {
+  file?: File;
   mimeType: string;
   name: string;
   uri: string;
