@@ -32,7 +32,7 @@ function loadTypeScript(relativePath, mocks) {
   return module.exports;
 }
 
-function loadCart(initialValue = null, read) {
+function loadCart(initialValue = null, read, platform = 'android') {
   let stored = initialValue;
   const writes = [];
   const storage = {
@@ -43,7 +43,7 @@ function loadCart(initialValue = null, read) {
   };
   const { clientCartStore: cart } = loadTypeScript('src/features/client/services/client-cart-store.ts', {
     'expo-secure-store': storage,
-    'react-native': { Platform: { OS: 'android' } },
+    'react-native': { Platform: { OS: platform } },
   });
   return { cart, writes, stored: () => stored };
 }
@@ -171,4 +171,91 @@ test('failed checkout preserves the cart and allows a retry', async () => {
   assert.equal((await checkout.submit()).payment.id, 'local-payment');
   assert.equal(attempts, 2);
   assert.equal(clears, 1);
+});
+
+test('restores duplicate stored products, clamps quantities and drops malformed entries', async () => {
+  const saved = storedCart([
+    { ...product, productId: ' product-a ', name: ' Shampoo ', quantity: 3 },
+    { ...product, quantity: 4 },
+    { ...product, productId: '', quantity: 1 },
+    { ...product, productId: 'empty', stock: 0, quantity: 1 },
+  ]);
+  const { cart } = loadCart(saved);
+  const hydrated = await cart.hydrate();
+  assert.equal(hydrated.distinctItemCount, 1);
+  assert.equal(hydrated.totalQuantity, 5);
+  assert.equal(hydrated.items[0].name, 'Shampoo');
+  assert.equal(hydrated.subtotal, 500);
+});
+
+test('invalid stored schema is discarded and the cart remains usable', async () => {
+  const { cart, writes } = loadCart(JSON.stringify({ version: 2, items: [product] }));
+  assert.equal((await cart.hydrate()).items.length, 0);
+  assert.deepEqual(writes, [null]);
+  await cart.add(product);
+  assert.equal(cart.getSnapshot().totalQuantity, 1);
+});
+
+test('malformed storage JSON does not prevent using the in-memory cart', async () => {
+  const { cart } = loadCart('{invalid-json');
+  assert.equal((await cart.hydrate()).isHydrated, true);
+  assert.equal((await cart.add(product)).totalQuantity, 1);
+});
+
+test('concurrent hydration shares the same read and preserves immutable snapshots', async () => {
+  const read = deferred();
+  let reads = 0;
+  const { cart } = loadCart(null, () => { reads++; return read.promise; });
+  const first = cart.hydrate();
+  const second = cart.hydrate();
+  assert.equal(reads, 1);
+  read.resolve(storedCart([{ ...product, quantity: 2 }]));
+  assert.equal((await first).totalQuantity, 2);
+  assert.equal((await second).totalQuantity, 2);
+  assert.equal(Object.isFrozen(cart.getSnapshot()), true);
+  assert.equal(Object.isFrozen(cart.getSnapshot().items[0]), true);
+});
+
+test('web cart hydrates and updates without accessing secure storage', async () => {
+  const { cart, writes } = loadCart(null, async () => { throw new Error('storage must not be read'); }, 'web');
+  assert.equal((await cart.hydrate()).isHydrated, true);
+  await cart.add(product, 2);
+  assert.equal(cart.getSnapshot().subtotal, 200);
+  await cart.clear();
+  assert.equal(cart.getSnapshot().totalQuantity, 0);
+  assert.equal(writes.length, 0);
+});
+
+test('rejects invalid products and quantities without changing the cart', async () => {
+  const { cart } = loadCart();
+  await assert.rejects(cart.add({ ...product, productId: ' ' }), /identificador/);
+  await assert.rejects(cart.add({ ...product, name: ' ' }), /nombre/);
+  await assert.rejects(cart.add({ ...product, unitPrice: -1 }), /precio/);
+  await assert.rejects(cart.add({ ...product, stock: Number.NaN }), /stock/);
+  await assert.rejects(cart.add(product, 0), /cantidad/);
+  assert.equal(cart.getSnapshot().items.length, 0);
+});
+
+test('reports changes to subscribers and stops after unsubscribe', async () => {
+  const { cart } = loadCart();
+  let notifications = 0;
+  const unsubscribe = cart.subscribe(() => { notifications++; });
+  await cart.add(product);
+  assert.ok(notifications >= 1);
+  const previous = notifications;
+  unsubscribe();
+  await cart.updateQuantity(product.productId, 3);
+  assert.equal(cart.getSnapshot().totalQuantity, 3);
+  assert.equal(notifications, previous);
+});
+
+test('unknown and blank product identifiers do not remove another item', async () => {
+  const { cart } = loadCart();
+  await cart.add(product);
+  const before = cart.getSnapshot();
+  assert.equal(await cart.remove('absent'), before);
+  assert.equal(await cart.updateQuantity('absent', 2), before);
+  await assert.rejects(cart.remove(' '), /identificador/);
+  await assert.rejects(cart.updateQuantity(' ', 2), /identificador/);
+  assert.equal(cart.getSnapshot().totalQuantity, 1);
 });
