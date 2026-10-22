@@ -84,6 +84,12 @@ describe('estado compartido del estilista', () => {
 
   it('carga la sesión y calcula notificaciones recientes no leídas', async () => {
     signIn();
+    const now = Date.now();
+    jest.mocked(getNotificationsReadAt).mockResolvedValue(new Date(now - 120_000).toISOString());
+    jest.mocked(stylistApiService.getSnapshot).mockResolvedValue({
+      ...snapshot,
+      appointments: [{ ...appointment, updatedAt: new Date(now - 60_000).toISOString() }],
+    } as Awaited<ReturnType<typeof stylistApiService.getSnapshot>>);
     const { result } = renderHook(() => useStylist(), { wrapper: StylistProvider });
     await waitFor(() => expect(result.current.hasData).toBe(true));
     expect(result.current.hasSession).toBe(true);
