@@ -1,3 +1,6 @@
+import { createURL } from 'expo-linking';
+import { Platform } from 'react-native';
+
 import type {
   AuthenticatedResponse,
   GoogleLoginCredentials,
@@ -121,8 +124,11 @@ export const publicAuthService = {
   },
 
   recoverPassword(correo: string) {
+    const destination = Platform.OS === 'web'
+      ? { origen: 'web' }
+      : { origen: 'movil', mobileResetUrl: createURL('public/reset-password') };
     return requestJson<MessageResponse>('/public/recover', {
-      body: JSON.stringify({ correo, origen: 'movil' }),
+      body: JSON.stringify({ correo, ...destination }),
       method: 'POST',
     });
   },
