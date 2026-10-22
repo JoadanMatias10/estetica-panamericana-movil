@@ -19,7 +19,6 @@ export const styles = StyleSheet.create({
   bannerText: { flex: 1, minWidth: 125, paddingVertical: spacing.md, fontSize: 12, fontWeight: '600', color: palette.text },
   link: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 2 },
   linkText: { fontSize: 11, color: palette.secondary, fontWeight: '600' },
-  preview: { color: palette.textMuted, fontSize: 11, lineHeight: 16, marginBottom: spacing.md },
   row: { gap: spacing.md },
   separator: { height: spacing.md },
   card: { flex: 1, minWidth: 0, backgroundColor: palette.surface, borderRadius: radius.lg, padding: 10, gap: 6, shadowColor: '#957AA7', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 9, elevation: 2 },
@@ -38,7 +37,5 @@ export const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 3, marginTop: 'auto' },
   price: { fontSize: 15, color: palette.secondaryBright, fontWeight: '700' },
   pressed: { opacity: 0.7 },
-  empty: { alignItems: 'center', gap: spacing.md, padding: spacing.xl },
-  emptyText: { fontSize: 16, fontWeight: '700', color: palette.text, textAlign: 'center' },
   secondaryText: { fontSize: 13, color: palette.textMuted, textAlign: 'center', lineHeight: 20 },
 });

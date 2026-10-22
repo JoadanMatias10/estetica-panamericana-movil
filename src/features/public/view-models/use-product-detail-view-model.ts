@@ -1,14 +1,15 @@
 import { useCallback, useRef, useState } from 'react';
 import { Share } from 'react-native';
-import { getProduct } from '../data/catalog-api';
+import { getProduct, type PublicApiLoadOptions } from '../services/public-api-service';
 import { formatProductPrice, productAvailability } from '../models/public-product';
-import { useCatalogResource } from './use-catalog-resource';
+import { usePublicApiResource } from './use-public-api-resource';
 
 export function useProductDetailViewModel(id?: string) {
-  const load = useCallback(async () => ({ product: id ? await getProduct(id) : undefined }), [id]);
-  const { data, ...resource } = useCatalogResource(load);
+  const load = useCallback(async (options?: PublicApiLoadOptions) => ({
+    product: id ? await getProduct(id, options) : undefined,
+  }), [id]);
+  const { data, ...resource } = usePublicApiResource(load);
   const product = data?.product;
-  const isPreview = false;
   const [shareError, setShareError] = useState<string>();
   const [isSharing, setIsSharing] = useState(false);
   const sharing = useRef(false);
@@ -20,7 +21,7 @@ export function useProductDetailViewModel(id?: string) {
     try {
       await Share.share({
         title: `${product.brand} · ${product.name}`,
-        message: `${product.brand} · ${product.name}\n${product.presentation} · ${formatProductPrice(product.price)} MXN\nEstética Panamericana${isPreview ? '\nProducto de ejemplo: precio y disponibilidad por confirmar.' : ''}`,
+        message: `${product.brand} · ${product.name}\n${product.presentation} · ${formatProductPrice(product.price)} MXN\nEstética Panamericana`,
       });
     } catch {
       setShareError('No pudimos abrir las opciones para compartir. Inténtalo nuevamente.');
@@ -28,10 +29,10 @@ export function useProductDetailViewModel(id?: string) {
       sharing.current = false;
       setIsSharing(false);
     }
-  }, [product, isPreview]);
+  }, [product]);
   return {
     ...resource,
-    product, isPreview, quantity: 1, canChangeQuantity: false as const,
+    product, quantity: 1, canChangeQuantity: false as const,
     availability: productAvailability(product?.stock), shareError, isSharing,
     onShare: () => { void onShare(); },
   };

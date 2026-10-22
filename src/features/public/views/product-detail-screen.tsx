@@ -11,7 +11,6 @@ import { styles } from '../styles/product-detail-screen.styles';
 type Props = {
   product?: PublicProduct;
   availability: 'available' | 'sold-out' | 'unknown';
-  isPreview: boolean;
   isLoading: boolean;
   error?: string;
   onRetry: () => void;
@@ -24,7 +23,7 @@ type Props = {
   onLogin: () => void;
 };
 
-export function ProductDetailScreen({ product, availability, isPreview, isLoading, error, onRetry, quantity, canChangeQuantity,
+export function ProductDetailScreen({ product, availability, isLoading, error, onRetry, quantity, canChangeQuantity,
   shareError, isSharing, onShare, onBack, onLogin }: Props) {
   if (!product) return <SafeAreaView edges={['top', 'left', 'right']} style={styles.screen}>
     <View style={styles.missing}>
@@ -69,22 +68,21 @@ export function ProductDetailScreen({ product, availability, isPreview, isLoadin
           <Text style={[styles.availability, !available && styles.soldOut]}>● {availabilityText}</Text>
           {availability !== 'unknown' && <Text style={styles.secondaryText}>{product.stock} unidades en stock</Text>}
         </View>
-        {isPreview && <Text style={styles.preview}>Producto de ejemplo: imagen ilustrativa, precio, información y existencias por confirmar.</Text>}
         <View style={styles.description}>
           <Text style={styles.sectionTitle}>Descripción</Text>
-          <Text style={styles.secondaryText}>{product.description || 'Descripción pendiente de confirmar.'}</Text>
+          <Text style={styles.secondaryText}>{product.description || 'Descripción no disponible.'}</Text>
         </View>
-        <View style={styles.features}>
+        {product.features.length ? <View style={styles.features}>
           <Text style={styles.sectionTitle}>Características</Text>
-          {product.features.length ? product.features.map((feature, index) => <View key={index} style={styles.featureRow}>
+          {product.features.map((feature, index) => <View key={index} style={styles.featureRow}>
             <Ionicons name="checkmark" size={12} color={palette.secondaryBright} style={styles.check} />
             <Text style={styles.featureText}>{feature}</Text>
-          </View>) : <Text style={styles.secondaryText}>Características pendientes de confirmar.</Text>}
-        </View>
-        <View style={styles.usage}>
+          </View>)}
+        </View> : null}
+        {product.usage ? <View style={styles.usage}>
           <Text style={styles.usageTitle}>Modo de uso</Text>
-          <Text style={styles.secondaryText}>{product.usage || 'Modo de uso pendiente de confirmar.'}</Text>
-        </View>
+          <Text style={styles.secondaryText}>{product.usage}</Text>
+        </View> : null}
         <View style={styles.quantitySection}>
           <View style={styles.quantity}>
             <Pressable disabled={!canChangeQuantity} accessibilityRole="button" accessibilityLabel="Disminuir cantidad"
