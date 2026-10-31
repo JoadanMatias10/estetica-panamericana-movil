@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.esteticapanamericana.app",
+      "allowBackup": false,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFF9FC",
@@ -26,9 +27,25 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
-      "@react-native-google-signin/google-signin",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "@react-native-firebase/app/app.plugin.js",
+      "@react-native-firebase/auth/app.plugin.js",
+      "@react-native-google-signin/google-signin/app.plugin.js",
       [
         "expo-splash-screen",
         {
@@ -43,7 +60,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "googleWebClientId": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com"
+      "googleWebClientId": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com",
+      "router": {},
+      "eas": {
+        "projectId": "3552ebeb-52e8-4add-8a5c-a09145a4cfe1"
+      }
     }
   }
 }

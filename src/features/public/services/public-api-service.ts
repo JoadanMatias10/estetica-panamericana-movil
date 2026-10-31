@@ -28,6 +28,7 @@ const CATALOG_CACHE_MS = 2 * 60_000;
 const DETAIL_CACHE_MS = 2 * 60_000;
 const CONTENT_CACHE_MS = 5 * 60_000;
 const HOME_CACHE_MS = 60_000;
+const HOME_RETRY_DELAY_MS = 1_000;
 
 export type PublicApiLoadOptions = {
   forceRefresh?: boolean;
@@ -411,7 +412,7 @@ function mapService(
   const dto = toRecord(value) as PublicServiceDto;
   const id = identifierOf(dto);
   const name = toStringValue(dto.nombre);
-  if (!id || !name) return undefined;
+  if (!id || !name || normalizedKey(name) === 'servicio de prueba') return undefined;
 
   const segment = toStringValue(dto.segmento);
   const subcategory = toStringValue(dto.subcategoria);
@@ -624,11 +625,25 @@ export function getHomeHighlights(options: PublicApiLoadOptions = {}) {
 export async function getPublicHomeContent(
   options: PublicApiLoadOptions = {},
 ): Promise<PublicHomeContent> {
-  const [companyInformation, highlights, carouselSlides] = await Promise.all([
+  const load = () => Promise.all([
     getCompanyInformation(options),
     getHomeHighlights(options),
     getCarouselSlides(options),
-  ]);
+  ] as const);
+
+  let content: Awaited<ReturnType<typeof load>>;
+  try {
+    content = await load();
+  } catch (error) {
+    const retryable = error instanceof PublicApiError
+      && (error.status === undefined || [502, 503, 504].includes(error.status));
+    if (!retryable) throw error;
+
+    await new Promise((resolve) => setTimeout(resolve, HOME_RETRY_DELAY_MS));
+    content = await load();
+  }
+
+  const [companyInformation, highlights, carouselSlides] = content;
 
   return {
     companyInformation,
