@@ -1,0 +1,109 @@
+name: Generar Android para Google Play
+run-name: Android ${{ github.ref_name }} (AAB)
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-production
+  cancel-in-progress: false
+
+jobs:
+  android:
+    name: Validar y generar AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: '1'
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Verificar que la etiqueta pertenece a main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo '::error::La etiqueta debe apuntar a un commit integrado en main.'
+            exit 1
+          fi
+
+      - name: Verificar versión y acceso a Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          node <<'NODE'
+          const { expo } = require('./app.json');
+          const tag = process.env.RELEASE_TAG;
+          if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag || '') || tag !== `v${expo.version}`) {
+            console.error('::error::La etiqueta debe coincidir con expo.version en app.json, por ejemplo v1.0.0.');
+            process.exit(1);
+          }
+          if (!process.env.EXPO_TOKEN) {
+            console.error('::error::Configura el secreto EXPO_TOKEN en Settings > Secrets and variables > Actions del repositorio.');
+            process.exit(1);
+          }
+          console.log(`Versión verificada: ${expo.version}`);
+          NODE
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar código
+        run: npm run lint
+
+      - name: Revisar tipos
+        run: npm run typecheck
+
+      - name: Ejecutar pruebas de Node
+        run: npm run test:node
+
+      - name: Ejecutar pruebas de la app
+        run: npm run test:ci
+
+      # Genera el archivo; la subida a Google Play se realiza manualmente.
+      - name: Compilar Android en EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx --yes eas-cli@latest build --platform android --profile production --non-interactive --wait --json > "$RUNNER_TEMP/eas-android-production.json"
+
+      - name: Descargar el AAB de esta compilación
+        run: |
+          artifact_url="$(jq -er '
+            if type == "array" and length == 1 then .[0] else error("Se esperaba una sola compilación") end
+            | select(.status == "FINISHED" and .platform == "ANDROID")
+            | (.artifacts.applicationArchiveUrl // .artifacts.buildUrl)
+            | select(type == "string" and startswith("https://"))
+          ' "$RUNNER_TEMP/eas-android-production.json")"
+          mkdir -p "$RUNNER_TEMP/android-release"
+          artifact_file="$RUNNER_TEMP/android-release/estetica-panamericana-${RELEASE_TAG}.aab"
+          curl --fail --location --retry 3 --output "$artifact_file" "$artifact_url"
+          unzip -t "$artifact_file" > /dev/null
+
+      - name: Guardar AAB para descargar
+        id: aab
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-${{ github.ref_name }}
+          path: ${{ runner.temp }}/android-release/*.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Mostrar enlace de descarga
+        env:
+          DOWNLOAD_URL: ${{ steps.aab.outputs.artifact-url }}
+        run: |
+          printf '### Android %s\n\n[Descargar AAB](%s)\n\nLa publicación en Google Play se realiza manualmente.\n' "$RELEASE_TAG" "$DOWNLOAD_URL" >> "$GITHUB_STEP_SUMMARY"
