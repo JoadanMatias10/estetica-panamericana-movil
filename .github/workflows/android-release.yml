@@ -64,6 +64,11 @@ jobs:
       - name: Revisar código
         run: npm run lint
 
+      - name: Generar tipos de Expo para CI
+        run: |
+          npx expo customize tsconfig.json
+          test -s expo-env.d.ts
+
       - name: Revisar tipos
         run: npm run typecheck
 
