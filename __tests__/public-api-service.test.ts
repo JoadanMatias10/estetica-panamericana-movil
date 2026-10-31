@@ -89,6 +89,8 @@ describe('API pública', () => {
           precio: '150', tiempo: '1 hora 30 min', imagen: 'https://example.invalid/corte.png' },
         { id: 's2', nombre: 'Corte infantil', segmento: 'Infantil', subcategoria: 'Corte',
           precio: -5, tiempo: '45 min' },
+        { id: 'test-service', nombre: ' Servicio de prueba ', segmento: 'Caballero',
+          subcategoria: 'Corte', precio: 1 },
         { id: 's3' },
       ] },
       '/api/public/service-categories': { categories: [
@@ -168,16 +170,46 @@ describe('API pública', () => {
   it('compone el contenido de inicio con tres respuestas reales mapeadas', async () => {
     mockRoutes({
       '/api/public/company-info': { companyInfo: { nombre: 'Estética' } },
-      '/api/public/home-highlights': { products: [{ id: 'p1', nombre: 'Champú' }], services: [],
+      '/api/public/home-highlights': { products: [{ id: 'p1', nombre: 'Champú' }],
+        services: [{ id: 'test-service', nombre: 'Servicio de prueba' }],
         promotions: [{ id: 'promo', titulo: 'Oferta' }, { id: 'sin-titulo' }] },
       '/api/public/carousel': { slides: [{ id: 'slide', image: 'https://example.invalid/slide.png' }] },
     });
     const home = await getPublicHomeContent();
     expect(home.companyInformation.name).toBe('Estética');
     expect(home.products.map((product) => product.id)).toEqual(['p1']);
+    expect(home.services).toEqual([]);
     expect(home.promotions.map((promotion) => promotion.id)).toEqual(['promo']);
     expect(home.carouselSlides.map((slide) => slide.id)).toEqual(['slide']);
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('reintenta automáticamente la carga inicial si el servidor tarda en despertar', async () => {
+    jest.useFakeTimers();
+    let companyRequests = 0;
+    fetchMock.mockImplementation(async (input, init) => {
+      const path = new URL(String(input)).pathname;
+      if (path === '/api/public/company-info') {
+        companyRequests += 1;
+        if (companyRequests === 1) {
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new Error('timeout')));
+          });
+        }
+        return respond({ companyInfo: { nombre: 'Estética' } });
+      }
+      if (path === '/api/public/home-highlights') {
+        return respond({ products: [], services: [], promotions: [] });
+      }
+      if (path === '/api/public/carousel') return respond({ slides: [] });
+      throw new Error(`Ruta inesperada: ${path}`);
+    });
+
+    const homePromise = getPublicHomeContent();
+    await jest.advanceTimersByTimeAsync(31_000);
+    await expect(homePromise).resolves.toMatchObject({ companyInformation: { name: 'Estética' } });
+    expect(companyRequests).toBe(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('mapea en un solo bootstrap los catálogos y promociones públicas', async () => {
@@ -204,6 +236,11 @@ describe('API pública', () => {
     const detail = await getService('s-1');
     expect(detail).toMatchObject({ id: 's-1', name: 'Corte', priceFrom: 250, durationMinutes: 30 });
     expect(detail?.images).toEqual([{ uri: 'https://example.invalid/one.png' }]);
+  });
+
+  it('omite también el detalle del servicio de prueba', async () => {
+    fetchMock.mockResolvedValue(respond({ service: { id: 'test-service', nombre: 'SERVICIO DE PRUEBA' } }));
+    await expect(getService('test-service')).resolves.toBeUndefined();
   });
 
   it('filtra promociones sin título o identificador', async () => {
