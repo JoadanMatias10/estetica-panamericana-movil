@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { Alert, Image, Pressable, View } from 'react-native';
 
 import { formatCalendarDate } from '@/features/client/components/client-appointment-helpers';
@@ -122,9 +122,10 @@ export function ClientProfileScreen() {
             <ClientMenuRow description="Mensajes registrados por el servidor" icon="mail-outline" onPress={() => router.push('/client/profile/notifications')} title="Notificaciones" />
           </AppCard>
           <AppCard>
-            <ClientMenuRow description="Recibirás un correo para cambiarla" icon="key-outline" onPress={() => router.push('/public/recover-password')} title="Cambiar contraseña" />
+            <ClientMenuRow description="Recibirás un correo para cambiarla" icon="key-outline" onPress={() => router.push('/client/profile/change-password')} title="Cambiar contraseña" />
             <ClientMenuRow icon="shield-checkmark-outline" onPress={() => router.push('/public/more/privacy')} title="Aviso de privacidad" />
             <ClientMenuRow icon="help-circle-outline" onPress={() => router.push('/public/more/contact')} title="Ayuda y contacto" />
+            <ClientMenuRow destructive description="Elimina tu cuenta y los datos asociados" icon="trash-outline" onPress={() => router.push('/public/delete-account' as Href)} title="Eliminar cuenta" />
             <ClientMenuRow destructive icon="log-out-outline" onPress={logout} title="Cerrar sesión" />
           </AppCard>
         </>
