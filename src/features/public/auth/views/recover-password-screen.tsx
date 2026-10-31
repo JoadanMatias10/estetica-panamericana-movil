@@ -11,21 +11,30 @@ import { useRecoverPasswordViewModel } from '@/features/public/auth/view-models/
 import { AppText } from '@/shared/components/app-text';
 import { spacing } from '@/shared/theme/tokens';
 
-export function RecoverPasswordScreen() {
+type RecoverPasswordScreenProps = {
+  onBack?: () => void;
+  returningToProfile?: boolean;
+};
+
+export function RecoverPasswordScreen({ onBack, returningToProfile = false }: RecoverPasswordScreenProps = {}) {
   const viewModel = useRecoverPasswordViewModel();
+  const backAction = onBack ?? viewModel.goBack;
 
   return (
     <AuthScreenLayout
       footer={(
         <View style={styles.footerRow}>
-          <AppText tone="muted">¿Recordaste tu contraseña?</AppText>
-          <AuthTextLink label="Volver a iniciar sesión" onPress={viewModel.goToLogin} />
+          <AppText tone="muted">{returningToProfile ? '¿Quieres volver a tu cuenta?' : '¿Recordaste tu contraseña?'}</AppText>
+          <AuthTextLink
+            label={returningToProfile ? 'Volver a mi perfil' : 'Volver a iniciar sesión'}
+            onPress={returningToProfile ? backAction : viewModel.goToLogin}
+          />
         </View>
       )}
       icon="mail-unread-outline"
-      onBack={viewModel.goBack}
+      onBack={backAction}
       subtitle="Escribe tu correo y te enviaremos un enlace para recuperar el acceso."
-      title="Recuperar contraseña">
+      title={returningToProfile ? 'Cambiar contraseña' : 'Recuperar contraseña'}>
       {viewModel.requestError ? (
         <AuthMessage tone="error">{viewModel.requestError}</AuthMessage>
       ) : null}
