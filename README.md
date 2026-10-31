@@ -71,3 +71,49 @@ El proyecto usa Continuous Native Generation; no se deben crear ni editar manual
 Para probar con Expo y recarga en desarrollo, genera el perfil `development` con `npx eas-cli@latest build --platform android --profile development` y abre la app instalada con `npx expo start --dev-client`. Para probar la ofuscación y R8 en un dispositivo, genera e instala el APK `preview` con `npx eas-cli@latest build --platform android --profile preview`. El perfil `production` genera el AAB para Google Play: `npx eas-cli@latest build --platform android --profile production`.
 
 Para verificar cada binario, revisa `Bundle JavaScript` y confirma el mensaje `[obfuscation]` con un número mayor que cero; en `Run gradlew` confirma `:app:minifyReleaseWithR8` y `BUILD SUCCESSFUL`. Inspecciona el APK o AAB final para comprobar que incluye bytecode Hermes y no incluye fuentes ni mapas de código. En Android, confirma también `allowBackup=false` y que no se declaran `CAMERA` ni `RECORD_AUDIO`.
+
+## Generar una versión desde GitHub
+
+El flujo `.github/workflows/android-release.yml` se dispara al subir una etiqueta
+como `v1.0.0`. Comprueba que coincida con `expo.version` en `app.json`, ejecuta
+lint, TypeScript y las pruebas, y genera un **AAB de Android** con EAS. El archivo
+queda en **Actions → Generar Android para Google Play → Artifacts**, disponible
+durante 30 días, con un enlace de descarga en el resumen de la ejecución.
+
+La versión visible inicial sigue siendo **1.0.0**. El perfil `production` usa
+`autoIncrement: true` y las versiones remotas de EAS para incrementar únicamente
+el número interno de compilación. Si ya hubo compilaciones, continúa desde el
+número remoto existente.
+
+Configuración inicial, una sola vez:
+
+1. Crear un [token de acceso de Expo](https://docs.expo.dev/accounts/programmatic-access/)
+   con acceso al proyecto y guardarlo en el repositorio en **Settings → Secrets
+   and variables → Actions → New repository secret**, con el nombre `EXPO_TOKEN`.
+   No se escribe el token en los archivos del proyecto.
+2. Tener las credenciales de firma de Android guardadas en EAS. Si faltan,
+   configurarlas interactivamente con `npx eas-cli@latest credentials --platform android`,
+   seleccionando el perfil `production`.
+3. Si se necesitan variables de entorno distintas a las predeterminadas de la
+   app, configurarlas en el entorno **production** de EAS. El `.env` local no
+   se sube al repositorio.
+
+Después de guardar y subir los cambios que deben formar parte de la versión,
+incluido este flujo, verificar que estén integrados en `main` y crear la
+etiqueta sobre ese commit, aunque la rama local activa sea otra:
+
+```bash
+git fetch origin main
+git tag v1.0.0 origin/main
+git push origin v1.0.0
+```
+
+Para una versión posterior, actualizar `expo.version` y subir su etiqueta,
+por ejemplo `v1.0.1`. Si una ejecución falla, corregir la causa y usar
+**Re-run jobs** en GitHub; el número interno de una nueva compilación no se repite.
+
+Este flujo solo genera el archivo descargable. **Antes de publicar la app, la
+política de privacidad debe estar publicada y sus datos confirmados.** El texto
+para la app y la página pública están preparados; ver [PRIVACIDAD.md](PRIVACIDAD.md).
+La subida a Play Console y la publicación son pasos manuales. Un AAB se carga en Play
+Console; para instalar directamente en un teléfono se usa el APK del perfil `preview`.
