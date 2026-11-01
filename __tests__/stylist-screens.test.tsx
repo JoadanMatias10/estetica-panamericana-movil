@@ -2,7 +2,7 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { dateKey, type StylistAppointment, type WorkDay } from '../src/features/stylist/models/stylist';
+import { addDays, dateKey, type StylistAppointment, type WorkDay } from '../src/features/stylist/models/stylist';
 import { useStylist } from '../src/features/stylist/view-models/stylist-provider';
 import { StylistAgendaScreen } from '../src/features/stylist/views/stylist-agenda-screen';
 import { StylistAppointmentDetailScreen } from '../src/features/stylist/views/stylist-appointment-detail-screen';
@@ -27,12 +27,14 @@ jest.mock('../src/shared/components/app-screen', () => ({
   },
 }));
 
-const today = dateKey(new Date());
-const tomorrow = dateKey(new Date(Date.now() + 86400000));
+// Las citas y el reloj comparten una fecha fija para no depender del día de ejecución.
+const referenceDate = new Date(2026, 10, 2, 10);
+const today = dateKey(referenceDate);
+const tomorrow = dateKey(addDays(referenceDate, 1));
 const appointment: StylistAppointment = {
   id: 'a-1', client: 'Ana López', service: 'Corte', phone: '+52 55 1234 5678', email: 'ana@example.test',
   date: today, start: '13:00', duration: 30, durationEstimated: true, status: 'pending', assigned: true,
-  notes: 'Sin productos', updatedAt: new Date().toISOString(),
+  notes: 'Sin productos', updatedAt: referenceDate.toISOString(),
 };
 const completed: StylistAppointment = {
   ...appointment, id: 'a-2', client: 'Bea', date: tomorrow, status: 'completed', start: '10:00',
@@ -44,15 +46,20 @@ const state = {
   appointments: [appointment, completed], workDays: days, blocks: [], interval: 30,
   identity: { id: 'stylist-1', name: 'Elena Ruiz', initials: 'ER' }, hasData: true,
   checkingSession: false, hasSession: true, refreshing: false, busy: false, error: '',
-  lastUpdated: new Date().toISOString(), notificationsRead: false, unreadCount: 1, readAt: '',
+  lastUpdated: referenceDate.toISOString(), notificationsRead: false, unreadCount: 1, readAt: '',
   refresh: jest.fn(), updateStatus: jest.fn(), saveAvailability: jest.fn(),
   markNotificationsRead: jest.fn(), signOut: jest.fn(),
 } as unknown as ReturnType<typeof useStylist>;
 
 beforeEach(() => {
+  jest.useFakeTimers({ now: referenceDate });
   jest.clearAllMocks();
   jest.mocked(useStylist).mockReturnValue(state);
   jest.mocked(state.updateStatus).mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe('pantallas del estilista', () => {
@@ -81,6 +88,26 @@ describe('pantallas del estilista', () => {
     expect(screen.getByText('1 cita')).toBeTruthy();
     fireEvent.press(screen.getByText('Ver detalle'));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/stylist/appointments/[id]', params: { id: 'a-1' } });
+  });
+
+  it.each([
+    { day: 'domingo', now: new Date(2026, 10, 1, 10), visibleClient: 'Ana López', hiddenClient: 'Bea' },
+    { day: 'lunes', now: new Date(2026, 10, 2, 10), visibleClient: 'Bea', hiddenClient: 'Ana López' },
+  ])('mantiene separadas las citas de cada semana el $day', ({ now, visibleClient, hiddenClient }) => {
+    jest.setSystemTime(now);
+    jest.mocked(useStylist).mockReturnValue({
+      ...state,
+      appointments: [
+        { ...appointment, date: '2026-11-01' },
+        { ...completed, date: '2026-11-02' },
+      ],
+    });
+
+    const screen = render(<StylistAppointmentsScreen />);
+
+    expect(screen.getByText('1 cita')).toBeTruthy();
+    expect(screen.getByText(visibleClient)).toBeTruthy();
+    expect(screen.queryByText(hiddenClient)).toBeNull();
   });
 
   it('ofrece limpiar filtros cuando no hay citas', () => {
