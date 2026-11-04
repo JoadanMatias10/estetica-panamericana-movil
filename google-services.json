@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "77956905746-qls3da9it0rma8cjp7ba4168jgttjboe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.esteticapanamericana.app",
+            "certificate_hash": "54103b5af90df4a80548afa2bf7eec707e6b3ba1"
+          }
+        },
+        {
           "client_id": "77956905746-t0oogo2d4qjnshumvq41393e2pbv0d0f.apps.googleusercontent.com",
           "client_type": 3
         }
